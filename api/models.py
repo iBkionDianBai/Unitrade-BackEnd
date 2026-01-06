@@ -1,6 +1,7 @@
 # api/models.py
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
 
 class User(AbstractUser):
     # 使用自定义 ID 以匹配 mock 中的 'u1', 'u2'
@@ -10,7 +11,7 @@ class User(AbstractUser):
     credit_score = models.IntegerField(default=600)
     bio = models.TextField(blank=True)
     is_banned = models.BooleanField(default=False)
-    join_date = models.DateField(auto_now_add=True)
+    join_date = models.DateField(default=timezone.now)
     wishlist = models.ManyToManyField('Product', blank=True, related_name='wishlisted_by')
     following = models.ManyToManyField('self', symmetrical=False, blank=True, related_name='followers')
 

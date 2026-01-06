@@ -5,7 +5,12 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from .models import User, Product, Message, Review
 from .serializers import UserSerializer, ProductSerializer, MessageSerializer, ReviewSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+from .serializers import MyTokenObtainPairSerializer # 确保导入了它
 
+# 添加这个自定义视图类
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -116,6 +121,22 @@ class ProductViewSet(viewsets.ModelViewSet):
             msg_type='SYSTEM'
         )
         return Response({'status': 'success'})
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def toggle_status(self, request, pk=None):
+        product = self.get_object()
+        product.status = request.data.get('status', 'ACTIVE')
+        product.save()
+
+        # Optional: Send notification to seller
+        if product.status == 'BANNED':
+            Message.objects.create(
+                sender=User.objects.filter(is_staff=True).first(),
+                receiver=product.seller,
+                content=f"Notice: Your item '{product.title}' has been taken down by an administrator.",
+                msg_type='SYSTEM'
+            )
+        return Response({'status': 'updated'})
 
 
 class MessageViewSet(viewsets.ModelViewSet):

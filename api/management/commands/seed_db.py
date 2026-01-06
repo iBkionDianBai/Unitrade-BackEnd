@@ -37,7 +37,20 @@ class Command(BaseCommand):
                 avatar=f"https://picsum.photos/seed/{u['username']}/100/100"
             )
         self.stdout.write("Users seeded.")
+        for u in users_data:
+            # Set is_staff to True if the role is ADMIN
+            is_staff = (u['role'] == 'ADMIN')
 
+            User.objects.create_user(
+                id=u['id'],
+                username=u['username'],
+                password='password123',
+                role=u['role'],
+                is_staff=is_staff,  # Added this line
+                credit_score=u['credit_score'],
+                bio=u['bio'],
+                avatar=f"https://picsum.photos/seed/{u['username']}/100/100"
+            )
         # 3. 导入初始商品
         products_data = [
             {'id': 'p1', 'sellerId': 'u4', 'title': 'Calculus Early Transcendentals', 'price': 45, 'category': 'Books',
