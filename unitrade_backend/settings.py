@@ -47,12 +47,6 @@ INSTALLED_APPS = [
 ]
 # 2. 必须指定自定义用户模型
 AUTH_USER_MODEL = 'api.User'
-SIMPLE_JWT = {
-    'AUTH_COOKIE': 'access_token',  # Cookie 名称
-    'AUTH_COOKIE_HTTP_ONLY': True,  # 防止 XSS 攻击
-    'AUTH_COOKIE_SECURE': False,    # 开发环境设为 False，生产环境设为 True
-    'AUTH_COOKIE_SAMESITE': 'Lax',
-}
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # 必须放在最上方之一
@@ -73,14 +67,15 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': [
-        # 允许任何人读取(GET)，但只有登录用户可以操作(POST, PUT等)
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly', # 允许首页游客查看
     ],
 }
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1), # 建议导入 timedelta 并设置有效期
     'AUTH_HEADER_TYPES': ('Bearer',),           # 对应前端 api.ts 中的 Bearer
 }
+
 ROOT_URLCONF = 'unitrade_backend.urls'
 
 TEMPLATES = [
