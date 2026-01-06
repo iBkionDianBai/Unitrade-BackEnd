@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -68,6 +68,19 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': [
+        # 允许任何人读取(GET)，但只有登录用户可以操作(POST, PUT等)
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ],
+}
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1), # 建议导入 timedelta 并设置有效期
+    'AUTH_HEADER_TYPES': ('Bearer',),           # 对应前端 api.ts 中的 Bearer
+}
 ROOT_URLCONF = 'unitrade_backend.urls'
 
 TEMPLATES = [

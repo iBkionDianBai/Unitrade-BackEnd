@@ -39,14 +39,15 @@ class Command(BaseCommand):
         self.stdout.write("Users seeded.")
         for u in users_data:
             # Set is_staff to True if the role is ADMIN
-            is_staff = (u['role'] == 'ADMIN')
+            is_admin = (u['role'] == 'ADMIN')
 
             User.objects.create_user(
                 id=u['id'],
                 username=u['username'],
                 password='password123',
                 role=u['role'],
-                is_staff=is_staff,  # Added this line
+                is_staff=is_admin,  # 只有设为 True，IsAdminUser 才会放行
+                is_superuser=is_admin,  # 允许进入 Django 原生后台
                 credit_score=u['credit_score'],
                 bio=u['bio'],
                 avatar=f"https://picsum.photos/seed/{u['username']}/100/100"

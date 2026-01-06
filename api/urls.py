@@ -4,7 +4,6 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 # 修改导入，引入您自定义的 View
 from .views import ProductViewSet, UserViewSet, MessageViewSet, ReviewViewSet, MyTokenObtainPairView
-
 router = DefaultRouter()
 router.register(r'products', ProductViewSet, basename='product')
 router.register(r'users', UserViewSet, basename='user')
@@ -15,6 +14,5 @@ urlpatterns = [
     # 将 TokenObtainPairView 替换为 MyTokenObtainPairView
     path('auth/login/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-
     path('', include(router.urls)),
 ]

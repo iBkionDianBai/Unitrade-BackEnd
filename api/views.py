@@ -16,6 +16,11 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
+    def get_permissions(self):
+        if self.action in ['admin_list', 'toggle_ban']:
+            return [permissions.IsAdminUser()]
+        return [permissions.AllowAny()]  # 允许首页或详情页查看卖家资料
+
     # 对应 api.ts 中的 users.getProfileData
     @action(detail=True, methods=['get'])
     def profile_data(self, request, pk=None):
@@ -46,10 +51,9 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(UserSerializer(user).data)
 
     # 管理员接口：获取所有用户列表
-    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAdminUser])
+    @action(detail=False, methods=['get'])
     def admin_list(self, request):
-        users = User.objects.all()
-        return Response(UserSerializer(users, many=True).data)
+        return Response(UserSerializer(User.objects.all(), many=True).data)
 
     # 管理员接口：封禁/解封用户
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
@@ -122,21 +126,16 @@ class ProductViewSet(viewsets.ModelViewSet):
         )
         return Response({'status': 'success'})
 
+
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def toggle_status(self, request, pk=None):
         product = self.get_object()
-        product.status = request.data.get('status', 'ACTIVE')
-        product.save()
-
-        # Optional: Send notification to seller
-        if product.status == 'BANNED':
-            Message.objects.create(
-                sender=User.objects.filter(is_staff=True).first(),
-                receiver=product.seller,
-                content=f"Notice: Your item '{product.title}' has been taken down by an administrator.",
-                msg_type='SYSTEM'
-            )
-        return Response({'status': 'updated'})
+        new_status = request.data.get('status')
+        if new_status:
+            product.status = new_status
+            product.save()
+            return Response({'status': 'updated'})
+        return Response({'error': 'No status provided'}, status=400)
 
 
 class MessageViewSet(viewsets.ModelViewSet):
