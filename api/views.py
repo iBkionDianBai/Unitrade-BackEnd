@@ -7,6 +7,7 @@ from .models import User, Product, Message, Review
 from .serializers import UserSerializer, ProductSerializer, MessageSerializer, ReviewSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import MyTokenObtainPairSerializer # 确保导入了它
+import decimal  # 处理钱包余额计算
 
 # 添加这个自定义视图类
 class MyTokenObtainPairView(TokenObtainPairView):
@@ -87,6 +88,19 @@ class UserViewSet(viewsets.ModelViewSet):
         # 返回更新后的用户信息（包含新的 following 列表）
         return Response(UserSerializer(user).data)
 
+    @action(detail=True, methods=['post'])
+    def withdraw(self, request, pk=None):
+        user = self.get_object()
+        amount = float(request.data.get('amount', 0))
+        card_number = request.data.get('cardNumber')
+
+        if amount <= 0 or amount > user.wallet_balance:
+            return Response({'error': '余额不足或金额非法'}, status=400)
+
+        user.wallet_balance -= decimal.Decimal(amount)
+        user.save()
+        return Response({'status': 'success', 'newBalance': float(user.wallet_balance)})
+
 
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
@@ -132,6 +146,8 @@ class ProductViewSet(viewsets.ModelViewSet):
     def purchase(self, request, pk=None):
         product = self.get_object()
         buyer_id = request.data.get('buyerId')
+        # 获取前端传来的地址
+        address = request.data.get('address', '未提供地址')
         buyer = get_object_or_404(User, id=buyer_id)
 
         if product.status != 'ACTIVE':
@@ -141,11 +157,11 @@ class ProductViewSet(viewsets.ModelViewSet):
         product.buyer = buyer
         product.save()
 
-        # 自动发送系统消息通知卖家
+        # 修改系统消息内容，包含买家地址
         Message.objects.create(
             sender=User.objects.filter(is_staff=True).first(),
             receiver=product.seller,
-            content=f"恭喜！您的商品 '{product.title}' 已被买家购买。",
+            content=f"恭喜！您的商品 '{product.title}' 已被买家购买。\n买家提供的收货地址/约定地点：{address}",
             msg_type='SYSTEM'
         )
         return Response({'status': 'success'})
@@ -160,6 +176,26 @@ class ProductViewSet(viewsets.ModelViewSet):
             product.save()
             return Response({'status': 'updated'})
         return Response({'error': 'No status provided'}, status=400)
+
+    @action(detail=True, methods=['post'])
+    def confirm_received(self, request, pk=None):
+        product = self.get_object()
+        # 验证只有买家可以确认
+        if product.buyer_id != request.data.get('buyerId'):
+            return Response({'error': '无权操作'}, status=403)
+
+        if product.status != 'SOLD':
+            return Response({'error': '商品状态不正确'}, status=400)
+
+        # 更新状态为 RECEIVED 并打款给卖家
+        product.status = 'RECEIVED'
+        product.save()
+
+        seller = product.seller
+        seller.wallet_balance += product.price
+        seller.save()
+
+        return Response({'status': 'success'})
 
 
 class MessageViewSet(viewsets.ModelViewSet):

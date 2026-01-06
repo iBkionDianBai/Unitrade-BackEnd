@@ -16,20 +16,37 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
             'bio': self.user.bio,
             'isBanned': self.user.is_banned,
             'wishlist': list(self.user.wishlist.values_list('id', flat=True)),
-            'following': list(self.user.following.values_list('id', flat=True))
+            'following': list(self.user.following.values_list('id', flat=True)),
+            'walletBalance': float(self.user.wallet_balance),  # 转换为 float 传给前端
         }
         return data
 
 
 class UserSerializer(serializers.ModelSerializer):
+    creditScore = serializers.IntegerField(source='credit_score', required=False)
+    isBanned = serializers.BooleanField(source='is_banned', required=False)
+    walletBalance = serializers.FloatField(source='wallet_balance', read_only=True)  # 余额建议只读，通过提现/交易逻辑修改
     joinDate = serializers.DateTimeField(source='date_joined', read_only=True)
-    creditScore = serializers.IntegerField(source='credit_score')
-    isBanned = serializers.BooleanField(source='is_banned')
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'avatar', 'role', 'creditScore', 'bio', 'isBanned', 'joinDate', 'wishlist',
-                  'following']
+        fields = [
+            'id', 'username', 'password', 'avatar', 'role',
+            'creditScore', 'bio', 'isBanned', 'joinDate',
+            'wishlist', 'following', 'walletBalance'
+        ]
+        extra_kwargs = {
+            'id': {'required': False},
+            'password': {'write_only': True},
+            'avatar': {'required': False}, # 注册时不需要传
+            'role': {'required': False},   # 默认为 STUDENT
+            'bio': {'required': False},
+        }
+
+    def create(self, validated_data):
+        # 使用 create_user 确保密码被正确哈希加密
+        user = User.objects.create_user(**validated_data)
+        return user
 
 
 class ProductSerializer(serializers.ModelSerializer):
