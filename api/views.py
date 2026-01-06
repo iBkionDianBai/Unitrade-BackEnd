@@ -19,7 +19,9 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['admin_list', 'toggle_ban']:
             return [permissions.IsAdminUser()]
-        return [permissions.AllowAny()]  # 允许首页或详情页查看卖家资料
+        if self.action in ['toggle_follow', 'toggle_wishlist']:
+            return [permissions.IsAuthenticated()]  # 仅限登录用户
+        return [permissions.AllowAny()]
 
     # 对应 api.ts 中的 users.getProfileData
     @action(detail=True, methods=['get'])
@@ -62,6 +64,28 @@ class UserViewSet(viewsets.ModelViewSet):
         user.is_banned = request.data.get('isBanned', False)
         user.save()
         return Response({'status': 'updated'})
+
+    @action(detail=True, methods=['post'])
+    def toggle_follow(self, request, pk=None):
+        # 获取发起关注请求的用户（即当前 URL 中的 ID 对应的用户）
+        user = self.get_object()
+
+        # 获取要被关注的目标用户 ID
+        target_id = request.data.get('targetId')
+        target_user = get_object_or_404(User, id=target_id)
+
+        # 防止自己关注自己
+        if user.id == target_user.id:
+            return Response({'error': 'You cannot follow yourself'}, status=400)
+
+        # 切换关注状态
+        if target_user in user.following.all():
+            user.following.remove(target_user)
+        else:
+            user.following.add(target_user)
+
+        # 返回更新后的用户信息（包含新的 following 列表）
+        return Response(UserSerializer(user).data)
 
 
 class ProductViewSet(viewsets.ModelViewSet):
