@@ -49,10 +49,7 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = 'api.User'
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # 必须放在最上方之一
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
