@@ -28,8 +28,12 @@ class User(AbstractUser):
     following = models.ManyToManyField('self', symmetrical=False, blank=True, related_name='followers')
     wallet_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)  # 新增钱包字段
 
+def generate_product_id():
+    """生成唯一的产品 ID，如 p + 随机字符"""
+    return "p" + uuid.uuid4().hex[:8]
+
 class Product(models.Model):
-    id = models.CharField(primary_key=True, max_length=50)
+    id = models.CharField(primary_key=True, max_length=50, default=generate_product_id, editable=False)
     seller = models.ForeignKey(User, on_delete=models.CASCADE, related_name='products')
     buyer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='purchases')
     title = models.CharField(max_length=200)

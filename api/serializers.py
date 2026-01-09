@@ -7,6 +7,14 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
+        
+        # 检查用户是否被封禁
+        if self.user.is_banned:
+            raise serializers.ValidationError({
+                'detail': 'Your account has been banned. Please contact support.',
+                'isBanned': True
+            })
+        
         data['user'] = {
             'id': str(self.user.id),
             'username': self.user.username,
@@ -50,8 +58,8 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ProductSerializer(serializers.ModelSerializer):
-    # 修复：必须提供 queryset 以支持数据读写
-    sellerId = serializers.PrimaryKeyRelatedField(source='seller', queryset=User.objects.all())
+    # sellerId 在创建时自动设置为当前用户，因此设为只读
+    sellerId = serializers.PrimaryKeyRelatedField(source='seller', read_only=True)
     # 修复：允许 buyer 为空，解决未售出商品详情页报错导致的 "Product not found"
     buyerId = serializers.PrimaryKeyRelatedField(source='buyer', queryset=User.objects.all(), required=False,
                                                  allow_null=True)
